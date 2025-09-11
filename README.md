@@ -10,11 +10,6 @@ wget https://raw.githubusercontent.com/pfxjacky/Ahead-HCP-Connect/refs/heads/mai
 
 
 
-```bash
-
-wget https://raw.githubusercontent.com/pfxjacky/Ahead-HCP-Connect/refs/heads/main/deploy.sh && chmod +x deploy.sh && ./deploy.sh
-
-```
 
 
 
@@ -34,16 +29,15 @@ SNI/证书：默认用 --server 作为 SNI，可用 --sni 覆盖；自签证书�
 
 性能：默认每连接一个隧道；如你要复用/多路复用，后续可以在这层再做 Mux（或改服务端支持 HTTP/2/WS/QUIC 等传输，这就接近标准核心了）。
 
-平台：Windows（给 v2rayN 用）/Linux/macOS 都可编译；Windows 不需要 OpenSSL。
 
 
 服务端完全协议对齐（Blake3 KDF、XChaCha20-Poly1305、24B 基 nonce + 8B 计数器、2B 长度头 + AEAD(len|payload) 帧、空帧表示对端关闭）。
 
 客户端（Windows 为主，亦可 Linux/macOS）
 
-对外暴露 SOCKS5 / HTTP CONNECT 本地端口，供 v2rayN 指向。
 
-smux 多路复用：单条外层 TLS+AEAD 隧道上，承载多条子流（每条子流首包携带目标 host:port）。
+
+smux 多路复用：单条外层 TLS+HEAD 隧道上，承载多条子流（每条子流首包携带目标 host:port）。
 
 多线程/多隧道池：可配置 pool 条并发隧道（每条隧道各自一个 smux session），提升吞吐与多核利用。
 
@@ -68,4 +62,4 @@ TLS（PKCS#12/PFX，自签自动生成）
 
 普通 CONNECT 与 MUX（smux） 模式
 
-自定义 AEAD（Blake3 KDF + XChaCha20-Poly1305，帧格式对齐你的客户端）
+
