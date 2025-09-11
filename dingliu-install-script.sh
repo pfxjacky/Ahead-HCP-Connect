@@ -31,6 +31,10 @@ DEFAULT_TIMEOUT="60"
 # 全局变量
 IPV4=""
 IPV6=""
+PUBLIC_IPV4=""
+PUBLIC_IPV6=""
+LOCAL_IPV4=""
+LOCAL_IPV6=""
 LISTEN_ADDR=""
 
 # 检查是否为root用户
@@ -329,7 +333,82 @@ full_install() {
     
     echo
     echo -e "${GREEN}✓ 安装完成！${NC}"
-    echo -e "${YELLOW}请使用菜单中的'启动顶流服务'来启动服务${NC}"
+    
+    # 7. 自动启动服务
+    echo
+    echo -e "${CYAN}正在启动服务...${NC}"
+    echo -e "${YELLOW}----------------------------------------${NC}"
+    
+    # 检查服务是否已在运行
+    if systemctl is-active --quiet "$SERVICE_NAME"; then
+        echo -e "${YELLOW}! 服务已在运行，正在重启...${NC}"
+        systemctl restart "$SERVICE_NAME"
+    else
+        echo -e "${YELLOW}正在启动服务...${NC}"
+        systemctl start "$SERVICE_NAME"
+        systemctl enable "$SERVICE_NAME" >/dev/null 2>&1
+    fi
+    
+    sleep 3
+    
+    if systemctl is-active --quiet "$SERVICE_NAME"; then
+        echo -e "${GREEN}✓ 服务启动成功！${NC}"
+        echo
+        echo -e "${GREEN}🎉 完整安装并启动完成！${NC}"
+        echo
+        echo -e "${GREEN}服务信息:${NC}"
+        echo -e "  服务状态: ${GREEN}运行中${NC}"
+        echo -e "  域名: ${CYAN}${DOMAIN}${NC}"
+        echo -e "  端口: ${CYAN}${PORT}${NC}"
+        echo -e "  PSK密钥: ${CYAN}${PSK_B64}${NC}"
+        echo
+        echo -e "${GREEN}客户端连接地址:${NC}"
+        # IPv4连接地址
+        if [ -n "$PUBLIC_IPV4" ]; then
+            echo -e "  IPv4连接: ${CYAN}${PUBLIC_IPV4}:${PORT}${NC} ${GREEN}(公网)${NC}"
+        elif [ -n "$LOCAL_IPV4" ]; then
+            if [[ "$LOCAL_IPV4" =~ ^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[01])\. ]]; then
+                echo -e "  ${YELLOW}注意: 仅检测到内网IPv4，外部客户端无法直接连接${NC}"
+                echo -e "  内网IPv4: ${CYAN}${LOCAL_IPV4}:${PORT}${NC} ${YELLOW}(仅内网可用)${NC}"
+            else
+                echo -e "  IPv4连接: ${CYAN}${LOCAL_IPV4}:${PORT}${NC}"
+            fi
+        fi
+        
+        # IPv6连接地址  
+        if [ -n "$PUBLIC_IPV6" ]; then
+            echo -e "  IPv6连接: ${CYAN}[${PUBLIC_IPV6}]:${PORT}${NC} ${GREEN}(公网)${NC}"
+        elif [ -n "$LOCAL_IPV6" ]; then
+            echo -e "  IPv6连接: ${CYAN}[${LOCAL_IPV6}]:${PORT}${NC}"
+        fi
+        
+        # 域名连接（最推荐）
+        if [ -n "$DOMAIN" ]; then
+            echo -e "  域名连接: ${CYAN}${DOMAIN}:${PORT}${NC} ${GREEN}(推荐)${NC}"
+        fi
+        
+        # 如果没有公网IP，给出建议
+        if [ -z "$PUBLIC_IPV4" ] && [ -z "$PUBLIC_IPV6" ]; then
+            echo -e "  ${YELLOW}💡 建议优先使用域名连接${NC}"
+        fi
+        
+        echo
+        echo -e "${YELLOW}📋 有用的命令:${NC}"
+        echo -e "  查看服务状态: ${CYAN}systemctl status $SERVICE_NAME${NC}"
+        echo -e "  查看实时日志: ${CYAN}tail -f $LOG_FILE${NC}"
+        echo -e "  停止服务: ${CYAN}systemctl stop $SERVICE_NAME${NC}"
+        
+        # 防火墙提示
+        echo
+        firewall_hint "$PORT"
+        
+    else
+        echo -e "${RED}✗ 服务启动失败${NC}"
+        echo -e "${YELLOW}查看错误信息:${NC}"
+        journalctl -u "$SERVICE_NAME" -n 10 --no-pager
+        echo
+        echo -e "${YELLOW}您可以稍后使用菜单中的'启动顶流服务'再次尝试启动${NC}"
+    fi
     
     read -p "按回车键返回主菜单..."
 }
