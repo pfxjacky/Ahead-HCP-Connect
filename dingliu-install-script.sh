@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 顶流服务一键部署脚本
-# Enhanced ANYTLS AEAD Server Deployment Script
+# Enhanced DL HEAD Server Deployment Script
 
 # 颜色定义
 RED='\033[0;31m'
@@ -40,7 +40,7 @@ check_root() {
 print_header() {
     clear
     echo -e "${CYAN}================================================${NC}"
-    echo -e "${CYAN}      顶流服务 (ANYTLS AEAD) 一键部署脚本      ${NC}"
+    echo -e "${CYAN}      顶流服务 (HEAD DINGLIU) 一键部署脚本      ${NC}"
     echo -e "${CYAN}================================================${NC}"
     echo
 }
