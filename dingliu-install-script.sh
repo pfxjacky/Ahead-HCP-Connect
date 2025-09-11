@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 顶流服务一键部署脚本
-# Enhanced DL HEAD Server Deployment Script
+# Enhanced HEAD Server Deployment Script
 
 # 颜色定义
 RED='\033[0;31m'
@@ -40,7 +40,7 @@ check_root() {
 print_header() {
     clear
     echo -e "${CYAN}================================================${NC}"
-    echo -e "${CYAN}      顶流服务 (HEAD DINGLIU) 一键部署脚本      ${NC}"
+    echo -e "${CYAN}      顶流服务 (DINGLIU HEAD) 一键部署脚本      ${NC}"
     echo -e "${CYAN}================================================${NC}"
     echo
 }
@@ -538,9 +538,10 @@ advanced_config() {
     echo "2) 配置最大连接数"
     echo "3) 配置超时时间"
     echo "4) 重新生成PSK密钥"
+    echo "5) 手动设置监听地址"
     echo "0) 返回主菜单"
     echo
-    read -p "请选择操作 [0-4]: " choice
+    read -p "请选择操作 [0-5]: " choice
     
     case $choice in
         1)
@@ -583,6 +584,21 @@ advanced_config() {
                 PSK_B64=$(generate_psk)
                 save_config
                 echo -e "${GREEN}✓ 新的PSK密钥: ${CYAN}$PSK_B64${NC}"
+            fi
+            ;;
+        5)
+            echo
+            echo -e "当前监听地址: ${CYAN}${LISTEN_ADDR}${NC}"
+            echo -e "${YELLOW}可选项:${NC}"
+            echo -e "  0.0.0.0 - 监听所有IPv4地址（推荐用于IPv4或双栈）"
+            echo -e "  [::] - 监听所有IPv6地址（仅IPv6环境）"
+            echo -e "  具体IP - 监听特定IP地址"
+            read -p "请输入新的监听地址 (留空保持不变): " new_listen
+            if [ -n "$new_listen" ]; then
+                LISTEN_ADDR="$new_listen"
+                save_config
+                echo -e "${GREEN}✓ 监听地址已更新为: $LISTEN_ADDR${NC}"
+                echo -e "${YELLOW}请重启服务使配置生效${NC}"
             fi
             ;;
         0)
