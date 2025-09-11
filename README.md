@@ -3,6 +3,12 @@
 
 One key Install script
 
+```bash
+wget https://raw.githubusercontent.com/pfxjacky/Ahead-HCP-Connect/refs/heads/main/dingliu-install-script.sh && chmod +x dingliu-install-script.sh && ./dingliu-install-script.sh
+```
+
+
+
 
 ```bash
 
