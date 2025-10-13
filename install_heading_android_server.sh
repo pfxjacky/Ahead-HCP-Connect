@@ -1,5 +1,5 @@
 #!/bin/bash
-# 一键安装/卸载 Ahead‑HCP‑Connect 的脚本
+# 一键安装/卸载 Ahead‑HCP‑Connect android_head_server 的脚本
 #
 # 本脚本提供一个简单的交互式菜单，可以安装或卸载服务端。
 # 安装时将根据用户输入自动生成证书、随机 PSK 密钥，并绑定机器的 IPv4 与 IPv6 地址。
@@ -9,8 +9,8 @@
 set -e
 
 # 安装目录，可根据需要修改
-INSTALL_DIR="/opt/head_android_server"
-SERVICE_FILE="/etc/systemd/system/head_android_server.service"
+INSTALL_DIR="/opt/heading_server"
+SERVICE_FILE="/etc/systemd/system/heading_server.service"
 
 # Github 仓库地址（用于备选编译）
 REPO_URL="https://github.com/pfxjacky/Ahead-HCP-Connect.git"
@@ -19,6 +19,16 @@ BIN_URL="https://raw.githubusercontent.com/pfxjacky/Ahead-HCP-Connect/refs/heads
 
 ###########################################################################
 # 工具函数
+
+# 在非 root 用户下自动使用 sudo 执行命令。
+function run_with_sudo() {
+    # $@ 引用调用者传入的所有参数
+    if [ "$(id -u)" -eq 0 ]; then
+        "$@"
+    else
+        sudo "$@"
+    fi
+}
 
 # 从当前主机获取首个公共 IPv4 地址
 function get_ipv4() {
@@ -135,9 +145,9 @@ function create_service() {
     local port="$2"
     local psk="$3"
     # 写入 systemd unit
-    sudo tee "$SERVICE_FILE" >/dev/null <<EOF
+    run_with_sudo tee "$SERVICE_FILE" >/dev/null <<EOF
 [Unit]
-Description=Ahead-HCP-Connect AEAD Server
+Description=Heading Server
 After=network.target
 
 [Service]
@@ -150,8 +160,25 @@ User=root
 [Install]
 WantedBy=multi-user.target
 EOF
-    sudo systemctl daemon-reload
-    sudo systemctl enable --now $(basename "$SERVICE_FILE" .service)
+    # 重新加载 systemd 配置并立即启动服务
+    run_with_sudo systemctl daemon-reload
+    run_with_sudo systemctl enable --now $(basename "$SERVICE_FILE" .service)
+}
+
+# 检查服务状态并输出最近日志
+function check_service_status() {
+    local service_name=$(basename "$SERVICE_FILE" .service)
+    # 查询服务是否正在运行
+    local status="$(run_with_sudo systemctl is-active "$service_name" 2>/dev/null || true)"
+    echo "服务当前状态: $status"
+    # 输出最近十行日志
+    echo "最近日志:"
+    # 使用 journalctl 打印最近的日志；忽略无法解析主机名的警告
+    run_with_sudo journalctl -u "$service_name" --no-pager -n 10 || true
+    # 如果服务未处于 active 状态，提醒用户检查配置
+    if [ "$status" != "active" ]; then
+        echo "注意: 服务未处于运行状态，请检查上述日志或手动运行 'systemctl status $service_name' 获取更多信息。"
+    fi
 }
 
 # 安装流程
@@ -160,7 +187,7 @@ function install_server() {
     read -p "请输入证书使用的域名 (默认 example.com): " domain
     domain=${domain:-example.com}
     read -p "请输入监听端口 (默认 8443): " port
-    port=${port:-58443}
+    port=${port:-8443}
     # 获取主机 IPv4 和 IPv6
     local ipv4=$(get_ipv4)
     local ipv6=$(get_ipv6)
@@ -183,6 +210,8 @@ function install_server() {
     echo "PSK 密钥: $psk"
     echo "证书保存路径: $INSTALL_DIR/server.crt"
     echo "私钥保存路径: $INSTALL_DIR/server.key"
+    # 检查服务是否启动成功并输出状态和日志
+    check_service_status
 }
 
 # 卸载流程
@@ -203,7 +232,7 @@ function uninstall_server() {
 function main_menu() {
     while true; do
         echo "=========================="
-        echo "  AnyTLS AEAD 服务管理脚本"
+        echo "      Heading Server 管理脚本"
         echo "=========================="
         echo "1) 安装服务端"
         echo "2) 卸载服务端"
