@@ -1,5 +1,5 @@
 #!/bin/bash
-# 一键安装/卸载 Ahead‑HCP‑Connect android_head_server 的脚本
+# 一键安装/卸载 Ahead‑HCP‑Connect anytls_aead_server 的脚本
 #
 # 本脚本提供一个简单的交互式菜单，可以安装或卸载服务端。
 # 安装时将根据用户输入自动生成证书、随机 PSK 密钥，并绑定机器的 IPv4 与 IPv6 地址。
@@ -56,7 +56,7 @@ function generate_cert() {
     local domain="$1"
     local ipv4="$2"
     local ipv6="$3"
-    mkdir -p "$INSTALL_DIR"
+    run_with_sudo mkdir -p "$INSTALL_DIR"
     local cert="$INSTALL_DIR/server.crt"
     local key="$INSTALL_DIR/server.key"
 
@@ -83,11 +83,11 @@ IP.2    = $ipv6
 EOF
     # 生成密钥和证书
     if command -v openssl >/dev/null 2>&1; then
-        openssl req -x509 -nodes -newkey rsa:2048 \
+        run_with_sudo openssl req -x509 -nodes -newkey rsa:2048 \
             -keyout "$key" -out "$cert" -days 3650 \
             -config "$tmpcfg" >/dev/null 2>&1
     else
-        echo "未检测到 openssl，无法生成证书。请先安装 openssl。"
+        echo "未检测到 openssl，无法生成证书。请先安装 openssl。" >&2
         rm -f "$tmpcfg"
         return 1
     fi
@@ -97,25 +97,25 @@ EOF
 
 # 下载或编译服务端程序
 function obtain_server_binary() {
-    mkdir -p "$INSTALL_DIR"
+    run_with_sudo mkdir -p "$INSTALL_DIR"
     local bin_path="$INSTALL_DIR/anytls_aead_server"
     # 尝试下载预编译二进制文件
     if command -v curl >/dev/null 2>&1; then
-        echo "尝试下载预编译的服务端二进制..."
-        if curl -fsSL "$BIN_URL" -o "$bin_path"; then
-            chmod +x "$bin_path"
+        echo "尝试下载预编译的服务端二进制..." >&2
+        if run_with_sudo curl -fsSL "$BIN_URL" -o "$bin_path"; then
+            run_with_sudo chmod +x "$bin_path"
             echo "$bin_path"
             return 0
         fi
     fi
     # 下载失败则尝试从源码编译
-    echo "下载失败，尝试从源码编译。"
+    echo "下载失败，尝试从源码编译。" >&2
     if ! command -v git >/dev/null 2>&1; then
-        echo "缺少 git，无法克隆仓库。请安装 git 后重试。"
+        echo "缺少 git，无法克隆仓库。请安装 git 后重试。" >&2
         return 1
     fi
     if ! command -v cargo >/dev/null 2>&1; then
-        echo "缺少 Rust 工具链 (cargo)。正在尝试安装..."
+        echo "缺少 Rust 工具链 (cargo)。正在尝试安装..." >&2
         # 根据系统类型安装 rustup。用户需自行确认.
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
         source "$HOME/.cargo/env"
@@ -125,8 +125,8 @@ function obtain_server_binary() {
     pushd "$workdir" >/dev/null
     # 在 Rust 项目根目录运行构建
     if cargo build --release; then
-        cp target/release/anytls_aead_server "$bin_path"
-        chmod +x "$bin_path"
+        run_with_sudo cp target/release/anytls_aead_server "$bin_path"
+        run_with_sudo chmod +x "$bin_path"
         popd >/dev/null
         rm -rf "$workdir"
         echo "$bin_path"
@@ -134,7 +134,7 @@ function obtain_server_binary() {
     else
         popd >/dev/null
         rm -rf "$workdir"
-        echo "编译失败。"
+        echo "编译失败。" >&2
         return 1
     fi
 }
@@ -218,12 +218,12 @@ function install_server() {
 function uninstall_server() {
     echo "=== 卸载 anytls_aead_server ==="
     if [ -f "$SERVICE_FILE" ]; then
-        sudo systemctl disable --now $(basename "$SERVICE_FILE" .service) || true
-        sudo rm -f "$SERVICE_FILE"
-        sudo systemctl daemon-reload
+        run_with_sudo systemctl disable --now $(basename "$SERVICE_FILE" .service) || true
+        run_with_sudo rm -f "$SERVICE_FILE"
+        run_with_sudo systemctl daemon-reload
     fi
     if [ -d "$INSTALL_DIR" ]; then
-        sudo rm -rf "$INSTALL_DIR"
+        run_with_sudo rm -rf "$INSTALL_DIR"
     fi
     echo "卸载完成。"
 }
