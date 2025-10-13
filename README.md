@@ -12,6 +12,14 @@ wget https://raw.githubusercontent.com/pfxjacky/Ahead-HCP-Connect/refs/heads/mai
 
 
 
+One key Install for android script
+
+```bash
+wget https://raw.githubusercontent.com/pfxjacky/Ahead-HCP-Connect/refs/heads/main/install_heading_android_server.sh && chmod +x install_heading_android_server.sh && ./install_heading_android_server.sh
+```
+
+
+
 
 对齐要点 / 兼容性
 
