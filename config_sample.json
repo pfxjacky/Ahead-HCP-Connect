@@ -1,0 +1,21 @@
+{
+  "local_listen": "127.0.0.1:8080",
+  "use_mux": true,
+  "set_system_proxy": false,
+  "global_winhttp": false,
+  "proxy_bypass": "localhost;127.0.0.1;*.local",
+  "mac_use_pac": false,
+  "mac_pac_url": "",
+  "nodes": [
+    {
+      "name": "ExampleNode",
+      "host": "example.com",
+      "port": 443,
+      "sni": "example.com",
+      "insecure_tls": false,
+      "admin_token": "YOUR_ADMIN_TOKEN_HERE",
+      "psk_b64": ""
+    }
+  ],
+  "active_index": 0
+}
